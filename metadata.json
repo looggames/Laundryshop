@@ -1,0 +1,7 @@
+{
+  "name": "Copy of Smart Laundry POS 1",
+  "description": "نظام كاشير ذكي لمغاسل الملابس يدعم إشعارات واتساب، تتبع الحالات، إدارة المخزون، والتقارير المالية.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
