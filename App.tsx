@@ -329,6 +329,7 @@ const App: React.FC = () => {
         setActiveTab('orders');
         setShowPrintModal(createdOrder);
 
+        // Auto msg
         triggerBackgroundNotification(createdOrder, 'RECEIVED');
       }
     } catch (e: any) {
@@ -356,7 +357,7 @@ const App: React.FC = () => {
     } catch (e) { console.error(e); }
   };
 
-  const sendWhatsAppReminder = async (order: Order, forceContext?: MessageContext) => {
+  const sendWhatsAppReminder = async (order: Order, context: MessageContext) => {
     if (sendingMessageIds.has(order.id)) return;
     setSendingMessageIds(prev => new Set(prev).add(order.id));
     
@@ -368,12 +369,13 @@ const App: React.FC = () => {
     }
 
     try {
-      const context: MessageContext = forceContext || (order.status === 'Ready' ? 'READY' : 'RECEIVED');
+      // تمرير السياق المطلوب (RECEIVED أو READY)
       const smartMsg = await generateSmartReminder(order, context);
-      const message = `${smartMsg}\n\n📦 فاتورة: ${order.order_number}\n💰 الإجمالي: ${order.total.toFixed(2)} ريال\n📍 الحالة: ${statusArabic[order.status]}`;
+      const fullMessage = `${smartMsg}\n\n📦 فاتورة: ${order.order_number}\n💰 الإجمالي: ${order.total.toFixed(2)} ريال\n📍 الحالة: ${statusArabic[order.status]}`;
+      
       const cleanPhone = order.customer_phone.replace(/\D/g, '');
       const finalPhone = cleanPhone.startsWith('966') ? cleanPhone : `966${cleanPhone.replace(/^0/, '')}`;
-      newWindow.location.href = `https://wa.me/${finalPhone}?text=${encodeURIComponent(message)}`;
+      newWindow.location.href = `https://wa.me/${finalPhone}?text=${encodeURIComponent(fullMessage)}`;
     } catch (error) { 
       newWindow.close(); 
       alert("خطأ في معالجة الرسالة."); 
@@ -385,22 +387,11 @@ const App: React.FC = () => {
     const element = document.getElementById('print-area');
     if (!element) return;
     
-    // Improved options for mobile compatibility
     const opt = {
       margin: [10, 10],
       filename: `Laundry-Invoice-${order.order_number}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { 
-        scale: 2, 
-        useCORS: true, 
-        logging: false,
-        letterRendering: true,
-        // Ensure we capture everything even if scrolled
-        scrollX: 0,
-        scrollY: 0,
-        // Fixed window width for rendering consistency
-        windowWidth: 800
-      },
+      html2canvas: { scale: 2, useCORS: true, windowWidth: 800 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
@@ -424,9 +415,7 @@ const App: React.FC = () => {
                            o.order_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            o.customer_phone.includes(searchQuery);
       if (!matchesSearch) return false;
-
       if (statusFilter !== 'all' && o.status !== statusFilter) return false;
-
       if (timeFilter !== 'all') {
         const hour = 3600000;
         const day = 86400000;
@@ -460,7 +449,7 @@ const App: React.FC = () => {
       <aside className="hidden md:flex flex-col w-24 xl:w-64 bg-white border-l p-4 py-8 sticky top-0 h-screen no-print transition-all">
         <div className="flex items-center justify-center xl:justify-start gap-3 mb-12 px-2">
           <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg"><ShoppingCart size={24} /></div>
-          <div className="hidden xl:block"><h1 className="text-lg font-black leading-tight text-slate-800">المغسلة الذكية</h1><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Laundry Pro v5.7</p></div>
+          <div className="hidden xl:block"><h1 className="text-lg font-black leading-tight text-slate-800">المغسلة الذكية</h1><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Laundry Pro v5.8</p></div>
         </div>
         <nav className="space-y-4">
           {navItems.map(item => (
@@ -711,6 +700,7 @@ const App: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
               <button onClick={() => window.print()} className="bg-indigo-600 text-white py-5 rounded-2xl font-black text-lg shadow-xl hover:bg-indigo-700 transition-all flex items-center justify-center gap-3"><Printer size={22}/> طباعة</button>
               <button onClick={() => handleDownloadPDF(showPrintModal)} className="bg-orange-500 text-white py-5 rounded-2xl font-black text-lg shadow-xl hover:bg-orange-600 transition-all flex items-center justify-center gap-3"><Download size={22}/> تحميل PDF</button>
+              {/* هنا نرسل RECEIVED لأننا في الفاتورة */}
               <button onClick={() => sendWhatsAppReminder(showPrintModal, 'RECEIVED')} className="bg-emerald-500 text-white py-5 rounded-2xl font-black text-lg shadow-xl hover:bg-emerald-600 transition-all flex items-center justify-center gap-3 sm:col-span-2"><Send size={22}/> إرسال واتساب يدوي</button>
             </div>
           </div>
